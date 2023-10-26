@@ -27,7 +27,6 @@ use lsp_types::{
 };
 use parking_lot::Mutex;
 use psp_types::{Notification, Request};
-use wasi_experimental_http_wasmtime::{HttpCtx, HttpState};
 use wasmtime_wasi::WasiCtxBuilder;
 
 use super::{
@@ -373,10 +372,6 @@ pub fn start_volt(
     )?;
     let mut linker = wasmtime::Linker::new(&engine);
     wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
-    HttpState::new()?.add_to_linker(&mut linker, |_| HttpCtx {
-        allowed_hosts: Some(vec!["insecure:allow-all".to_string()]),
-        max_concurrent_requests: Some(100),
-    })?;
 
     let volt_path = meta
         .dir
@@ -465,7 +460,7 @@ pub fn start_volt(
             .get_func(&mut store, "handle_rpc")
             .ok_or_else(|| anyhow!("can't convet to function"))
             .unwrap()
-            .typed::<(), (), _>(&mut store)
+            .typed::<(), ()>(&mut store)
             .unwrap();
         for msg in io_rx {
             if let Ok(msg) = serde_json::to_string(&msg) {
